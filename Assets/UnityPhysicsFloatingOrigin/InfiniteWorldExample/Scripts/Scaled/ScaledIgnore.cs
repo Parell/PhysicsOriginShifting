@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace UnityPhysicsFloatingOrigin
+namespace PhysicsFloatingOrigin
 {
     public sealed class ScaledIgnore : MonoBehaviour { }
 }

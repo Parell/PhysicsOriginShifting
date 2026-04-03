@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace UnityPhysicsFloatingOrigin
+namespace PhysicsFloatingOrigin
 {
     [System.Serializable]
     public class BodyData

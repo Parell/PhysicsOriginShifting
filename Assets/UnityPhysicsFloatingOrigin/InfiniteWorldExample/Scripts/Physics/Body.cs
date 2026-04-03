@@ -1,12 +1,13 @@
 using UnityEngine;
 
-namespace UnityPhysicsFloatingOrigin
+namespace PhysicsFloatingOrigin
 {
     public enum BodyType
     {
         Celestial, Vessel, Missile, Bullet, Temporary
     }
 
+    // Stores physical state and manages the scaled-world proxy for each object.
     [ExecuteAlways, RequireComponent(typeof(Rigidbody))]
     public class Body : MonoBehaviour
     {
@@ -25,6 +26,7 @@ namespace UnityPhysicsFloatingOrigin
         {
             if (rb == null) { rb = GetComponent<Rigidbody>(); }
 
+            // Create or reconnect the scaled proxy that mirrors this body for distant rendering.
             if (scaledTransform == null)
             {
                 var root = GameObject.Find("Scaled");
@@ -66,7 +68,6 @@ namespace UnityPhysicsFloatingOrigin
         }
 
 #if UNITY_EDITOR
-        //public Keplerian keplerian;
         private bool inEditor => Application.isEditor && !Application.isPlaying;
         private Vector3 lastTransformPostion;
         private Vector3d lastBodyDataPostion;
@@ -78,11 +79,7 @@ namespace UnityPhysicsFloatingOrigin
         {
             if (!inEditor) { return; }
 
-            // if (keplerian.parentBody != null)
-            // {
-            //     keplerian.CartesianToKeplerian(bodyData);
-            // }
-
+            // Keep the transform, body data, and scaled proxy in sync while editing.
             if (transform.position != lastTransformPostion)
             {
                 lastTransformPostion = transform.position;
@@ -148,6 +145,7 @@ namespace UnityPhysicsFloatingOrigin
         {
             var acceleration = (Vector3)((Vector3d)force / rb.mass);
 
+            // The main body pushes the rest of the simulation in the opposite direction.
             if (this == PhysicsManager.mainBody)
             {
                 foreach (var body in PhysicsManager.bodies)
@@ -179,6 +177,7 @@ namespace UnityPhysicsFloatingOrigin
 
         public void Collisions(bool state)
         {
+            // Switch between kinematic and dynamic modes based on whether the body is inside the active simulation range.
             if (bodyData.forceKinematic)
             {
                 rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
@@ -187,6 +186,10 @@ namespace UnityPhysicsFloatingOrigin
             }
 
             rb.mass = (float)bodyData.mass;
+            if (rb.isKinematic)
+            {
+
+            }
             rb.angularVelocity = bodyData.angularVelocity;
             rb.velocity = (Vector3)bodyData.velocity;
             rb.position = (Vector3)bodyData.position;

@@ -1,7 +1,8 @@
 using UnityEngine;
 
-namespace UnityPhysicsFloatingOrigin
+namespace PhysicsFloatingOrigin
 {
+    // Mirrors the local camera into scaled units for the far-world proxy scene.
     public class ScaledCamera : MonoBehaviour
     {
         [SerializeField] private Camera localCamera;
@@ -16,6 +17,7 @@ namespace UnityPhysicsFloatingOrigin
 
         private void LateUpdate()
         {
+            // The scaled camera stays aligned to the local camera but uses scaled clip distances.
             scaledCamera.nearClipPlane = localCamera.farClipPlane * nearClipPlane * Constant.INVERSE_SCALE;
             scaledCamera.farClipPlane = unscaledFarClipPlane * Constant.INVERSE_SCALE;
 

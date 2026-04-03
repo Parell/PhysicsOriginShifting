@@ -6,8 +6,9 @@ using System;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using uei = UnityEngine.Internal;
+using UnityEngine;
 
-namespace UnityEngine
+namespace PhysicsFloatingOrigin
 {
     // Representation of 3D vectors and points.
     [StructLayout(LayoutKind.Sequential), Serializable]

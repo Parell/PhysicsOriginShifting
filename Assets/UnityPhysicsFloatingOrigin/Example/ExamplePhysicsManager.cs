@@ -1,170 +1,175 @@
 ﻿using UnityEngine;
 
-public class ExamplePhysicsManager : MonoBehaviour
+namespace PhysicsFloatingOrigin
 {
-    public enum RebasingState { None, FloatingOrigin, PhysicsFloatingOrigin }
-
-    [Header("Rebasing")]
-    [SerializeField] private RebasingState rebasingState;
-    [SerializeField] private Rigidbody mainBody;
-    [SerializeField] private Rigidbody[] bodies;
-    [SerializeField] private float rebaseDistanceThreshold = 1000f;
-    [SerializeField] private float rebaseVelocityThreshold = 1000f;
-    [SerializeField] private float frequency = 1f;
-    [SerializeField] private float damping = 1f;
-
-    private Vector3 originPositionOffset;
-    private Vector3 originVelocityOffset;
-    private Vector3 previousMainBodyVelocity;
-    private bool hasPreviousMainBodyVelocity;
-
-    private Vector3 mainBodyPhysicalPosition;
-    private Vector3 mainBodyPhysicalVelocity;
-    private Vector3 mainBodyPhysicalAcceleration;
-    private Vector3 imaginaryAcceleration;
-    private Vector3 previousImaginaryAcceleration;
-
-    public Vector3 MainBodyPhysicalPosition => mainBodyPhysicalPosition;
-    public Vector3 MainBodyPhysicalVelocity => mainBodyPhysicalVelocity;
-    public Vector3 MainBodyPhysicalAcceleration => mainBodyPhysicalAcceleration;
-    public RebasingState CurrentRebasingState => rebasingState;
-    public Rigidbody MainBody => mainBody;
-
-    private void Start()
+    [DefaultExecutionOrder(-100)]
+    public class ExamplePhysicsManager : MonoBehaviour
     {
-        bodies = FindObjectsOfType<Rigidbody>();
-        if (mainBody == null && bodies.Length > 0)
+        public enum RebasingState { None, FloatingOrigin, PhysicsFloatingOrigin }
+
+        [Header("Rebasing")]
+        [SerializeField] private RebasingState rebasingState;
+        [SerializeField] private Rigidbody mainBody;
+        [SerializeField] private Rigidbody[] bodies;
+        [SerializeField] private float rebaseDistanceThreshold = 1000f;
+        [SerializeField] private float rebaseVelocityThreshold = 1000f;
+        [SerializeField] private float frequency = 1f;
+        [SerializeField] private float damping = 1f;
+
+        private Vector3 originPositionOffset;
+        private Vector3 originVelocityOffset;
+        private Vector3 previousMainBodyVelocity;
+        private bool hasPreviousMainBodyVelocity;
+
+        private Vector3 mainBodyPhysicalPosition;
+        private Vector3 mainBodyPhysicalVelocity;
+        private Vector3 mainBodyPhysicalAcceleration;
+        private Vector3 imaginaryAcceleration;
+        private Vector3 previousImaginaryAcceleration;
+
+        public Vector3 MainBodyPhysicalPosition => mainBodyPhysicalPosition;
+        public Vector3 MainBodyPhysicalVelocity => mainBodyPhysicalVelocity;
+        public Vector3 MainBodyPhysicalAcceleration => mainBodyPhysicalAcceleration;
+        public RebasingState CurrentRebasingState => rebasingState;
+        public Rigidbody MainBody => mainBody;
+
+        private void Start()
         {
-            mainBody = bodies[0];
-        }
-        UpdatePhysicalState();
-    }
-
-    private void FixedUpdate()
-    {
-        ApplyRebasingIfNeeded();
-        ApplyPhysicsRebasing();
-        UpdatePhysicalState();
-    }
-
-    private void ApplyPhysicsRebasing()
-    {
-        if (rebasingState != RebasingState.PhysicsFloatingOrigin || mainBody == null || bodies == null)
-        {
-            imaginaryAcceleration = Vector3.zero;
-            return;
-        }
-
-        float kp = frequency * frequency;
-        float kd = 2f * frequency * damping;
-        float dt = Time.fixedDeltaTime;
-        float g = 1f / (1f + kd * dt + kp * dt * dt);
-        float ksg = kp * g;
-        float kdg = (kd + kp * dt) * g;
-
-        Vector3 pt0 = mainBody.worldCenterOfMass;
-        Vector3 vt0 = mainBody.velocity;
-        Vector3 acceleration = (Vector3.zero - pt0) * ksg + (Vector3.zero - vt0) * kdg;
-        imaginaryAcceleration = acceleration;
-
-        mainBody.AddForce(acceleration, ForceMode.Acceleration);
-
-        for (int i = 0; i < bodies.Length; i++)
-        {
-            Rigidbody body = bodies[i];
-            if (body == null || body == mainBody)
+            bodies = FindObjectsOfType<Rigidbody>();
+            if (mainBody == null && bodies.Length > 0)
             {
-                continue;
+                mainBody = bodies[0];
+            }
+            UpdatePhysicalState();
+        }
+
+        private void FixedUpdate()
+        {
+            ApplyRebasingIfNeeded();
+            ApplyPhysicsRebasing();
+            UpdatePhysicalState();
+            Physics.Simulate(Time.fixedDeltaTime);
+        }
+
+        private void ApplyPhysicsRebasing()
+        {
+            if (rebasingState != RebasingState.PhysicsFloatingOrigin || mainBody == null || bodies == null)
+            {
+                imaginaryAcceleration = Vector3.zero;
+                return;
             }
 
-            body.AddForce(acceleration, ForceMode.Acceleration);
-        }
-    }
+            float kp = frequency * frequency;
+            float kd = 2f * frequency * damping;
+            float dt = Time.fixedDeltaTime;
+            float g = 1f / (1f + kd * dt + kp * dt * dt);
+            float ksg = kp * g;
+            float kdg = (kd + kp * dt) * g;
 
-    public void SetRebasingState(RebasingState state)
-    {
-        if (rebasingState == state)
-        {
-            return;
-        }
+            Vector3 pt0 = mainBody.worldCenterOfMass;
+            Vector3 vt0 = mainBody.velocity;
+            Vector3 acceleration = (Vector3.zero - pt0) * ksg + (Vector3.zero - vt0) * kdg;
+            imaginaryAcceleration = acceleration;
 
-        rebasingState = state;
-        hasPreviousMainBodyVelocity = false;
-        previousImaginaryAcceleration = Vector3.zero;
-    }
+            mainBody.AddForce(acceleration, ForceMode.Acceleration);
 
-    private void ApplyRebasingIfNeeded()
-    {
-        if (rebasingState != RebasingState.FloatingOrigin || mainBody == null || bodies == null)
-        {
-            return;
-        }
-
-        Vector3 positionShift = mainBody.position;
-        if (positionShift.magnitude > rebaseDistanceThreshold)
-        {
             for (int i = 0; i < bodies.Length; i++)
             {
-                bodies[i].position -= positionShift;
-            }
+                Rigidbody body = bodies[i];
+                if (body == null || body == mainBody)
+                {
+                    continue;
+                }
 
-            originPositionOffset += positionShift;
+                body.AddForce(acceleration, ForceMode.Acceleration);
+            }
         }
 
-        Vector3 velocityShift = mainBody.velocity;
-        if (velocityShift.magnitude > rebaseVelocityThreshold)
+        public void SetRebasingState(RebasingState state)
         {
-            for (int i = 0; i < bodies.Length; i++)
+            if (rebasingState == state)
             {
-                bodies[i].velocity -= velocityShift;
+                return;
             }
 
-            originVelocityOffset += velocityShift;
-        }
-    }
-
-    private void UpdatePhysicalState()
-    {
-        if (mainBody == null)
-        {
-            mainBodyPhysicalPosition = Vector3.zero;
-            mainBodyPhysicalVelocity = Vector3.zero;
-            mainBodyPhysicalAcceleration = Vector3.zero;
+            rebasingState = state;
             hasPreviousMainBodyVelocity = false;
-            imaginaryAcceleration = Vector3.zero;
             previousImaginaryAcceleration = Vector3.zero;
-            return;
         }
 
-        if (rebasingState == RebasingState.PhysicsFloatingOrigin && Time.fixedDeltaTime > 0f)
+        private void ApplyRebasingIfNeeded()
         {
-            // Counteract the artificial acceleration used to keep the origin centered.
-            originVelocityOffset -= previousImaginaryAcceleration * Time.fixedDeltaTime;
-            originPositionOffset += originVelocityOffset * Time.fixedDeltaTime;
+            if (rebasingState != RebasingState.FloatingOrigin || mainBody == null || bodies == null)
+            {
+                return;
+            }
+
+            Vector3 positionShift = mainBody.position;
+            if (positionShift.magnitude > rebaseDistanceThreshold)
+            {
+                for (int i = 0; i < bodies.Length; i++)
+                {
+                    bodies[i].position -= positionShift;
+                }
+
+                originPositionOffset += positionShift;
+            }
+
+            Vector3 velocityShift = mainBody.velocity;
+            if (velocityShift.magnitude > rebaseVelocityThreshold)
+            {
+                for (int i = 0; i < bodies.Length; i++)
+                {
+                    bodies[i].velocity -= velocityShift;
+                }
+
+                originVelocityOffset += velocityShift;
+            }
         }
 
-        mainBodyPhysicalPosition = mainBody.position + originPositionOffset;
-        mainBodyPhysicalVelocity = mainBody.velocity + originVelocityOffset;
-
-        if (hasPreviousMainBodyVelocity && Time.fixedDeltaTime > 0f)
+        private void UpdatePhysicalState()
         {
-            mainBodyPhysicalAcceleration = (mainBodyPhysicalVelocity - previousMainBodyVelocity) / Time.fixedDeltaTime;
+            if (mainBody == null)
+            {
+                mainBodyPhysicalPosition = Vector3.zero;
+                mainBodyPhysicalVelocity = Vector3.zero;
+                mainBodyPhysicalAcceleration = Vector3.zero;
+                hasPreviousMainBodyVelocity = false;
+                imaginaryAcceleration = Vector3.zero;
+                previousImaginaryAcceleration = Vector3.zero;
+                return;
+            }
+
+            if (rebasingState == RebasingState.PhysicsFloatingOrigin && Time.fixedDeltaTime > 0f)
+            {
+                // Counteract the artificial acceleration used to keep the origin centered.
+                originVelocityOffset -= previousImaginaryAcceleration * Time.fixedDeltaTime;
+                originPositionOffset += originVelocityOffset * Time.fixedDeltaTime;
+            }
+
+            mainBodyPhysicalPosition = mainBody.position + originPositionOffset;
+            mainBodyPhysicalVelocity = mainBody.velocity + originVelocityOffset;
+
+            if (hasPreviousMainBodyVelocity && Time.fixedDeltaTime > 0f)
+            {
+                mainBodyPhysicalAcceleration = (mainBodyPhysicalVelocity - previousMainBodyVelocity) / Time.fixedDeltaTime;
+            }
+            else
+            {
+                mainBodyPhysicalAcceleration = Vector3.zero;
+            }
+
+            previousMainBodyVelocity = mainBodyPhysicalVelocity;
+            hasPreviousMainBodyVelocity = true;
+            previousImaginaryAcceleration = imaginaryAcceleration;
         }
-        else
+
+        private void OnValidate()
         {
-            mainBodyPhysicalAcceleration = Vector3.zero;
+            rebaseDistanceThreshold = Mathf.Max(0f, rebaseDistanceThreshold);
+            rebaseVelocityThreshold = Mathf.Max(0f, rebaseVelocityThreshold);
+            frequency = Mathf.Max(0f, frequency);
+            damping = Mathf.Max(0f, damping);
         }
-
-        previousMainBodyVelocity = mainBodyPhysicalVelocity;
-        hasPreviousMainBodyVelocity = true;
-        previousImaginaryAcceleration = imaginaryAcceleration;
-    }
-
-    private void OnValidate()
-    {
-        rebaseDistanceThreshold = Mathf.Max(0f, rebaseDistanceThreshold);
-        rebaseVelocityThreshold = Mathf.Max(0f, rebaseVelocityThreshold);
-        frequency = Mathf.Max(0f, frequency);
-        damping = Mathf.Max(0f, damping);
     }
 }

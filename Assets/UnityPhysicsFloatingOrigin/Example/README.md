@@ -32,6 +32,7 @@ This script:
 This script provides the on-screen controls and readout:
 
 - Switch between rebasing modes.
+- Display the current FPS in the same HUD.
 - Display the current physical position, velocity, and acceleration of the main body.
 
 ### `ExampleBody`

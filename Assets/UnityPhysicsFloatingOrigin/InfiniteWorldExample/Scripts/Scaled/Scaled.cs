@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace UnityPhysicsFloatingOrigin
+namespace PhysicsFloatingOrigin
 {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(Body))]

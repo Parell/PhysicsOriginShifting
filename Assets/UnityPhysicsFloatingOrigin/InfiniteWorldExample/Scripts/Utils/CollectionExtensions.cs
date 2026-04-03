@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace UnityPhysicsFloatingOrigin
+namespace PhysicsFloatingOrigin
 {
     public static class CollectionExtensions
     {

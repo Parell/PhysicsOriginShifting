@@ -6,8 +6,9 @@ using System;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using UnityEngine.Internal;
+using UnityEngine;
 
-namespace UnityEngine
+namespace PhysicsFloatingOrigin
 {
     [StructLayout(LayoutKind.Sequential), Serializable]
     public partial struct Quaterniond

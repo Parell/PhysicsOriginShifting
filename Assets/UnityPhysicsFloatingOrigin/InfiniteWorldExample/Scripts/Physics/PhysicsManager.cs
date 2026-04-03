@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace UnityPhysicsFloatingOrigin
+namespace PhysicsFloatingOrigin
 {
+    // Central simulation coordinator for the floating-origin example.
     [DefaultExecutionOrder(10)]
     public class PhysicsManager : MonoBehaviour
     {
@@ -80,6 +81,7 @@ namespace UnityPhysicsFloatingOrigin
 
         private void Update()
         {
+            // Split the requested time scale into Unity's global scale and extra fixed-step iterations.
             _timeScale = Mathf.Clamp(_timeScale, 0, 100);
             tightTimeScale = _timeScale < 1 ? 1 : (int)_timeScale;
             looseTimeScale = _timeScale < 1 ? _timeScale : 1 + _timeScale - tightTimeScale;
@@ -97,6 +99,7 @@ namespace UnityPhysicsFloatingOrigin
 
         private void UpdateStates()
         {
+            // Toggle rigidbodies between dynamic and kinematic modes based on distance from the main body.
             oneInPhysicsRange = false;
             for (int j = 0; j < _bodies.Count; j++)
             {
@@ -170,6 +173,7 @@ namespace UnityPhysicsFloatingOrigin
                 _mainBody.TryGetComponent(out mainCollisionResolver);
             }
 
+            // Run multiple substeps when the example is accelerated beyond Unity's default fixed-step rate.
             for (int i = 0; i < tightTimeScale; i++)
             {
                 _currentTime += fixedDeltaTime;
@@ -224,6 +228,7 @@ namespace UnityPhysicsFloatingOrigin
 
         public Vector3d Acceleration(int index, Vector3d position)
         {
+            // N-body gravity from large-mass bodies only; small bodies are ignored for performance.
             var acceleration = Vector3d.zero;
             for (int i = 0; i < _bodies.Count; i++)
             {
@@ -242,6 +247,7 @@ namespace UnityPhysicsFloatingOrigin
 
         public (Vector3d position, Vector3d velocity) Integrate(int index, Vector3d acceleration, float deltaTime)
         {
+            // RK4 integration for bodies that stay kinematic but still need smooth motion.
             Vector3d Velocity(Vector3d position, float deltaTime)
             {
                 return _bodyData[index].velocity + (Acceleration(index, position) * deltaTime);
@@ -272,6 +278,7 @@ namespace UnityPhysicsFloatingOrigin
 
         private Quaternion IntegrateRotatation(Quaternion rotation, Vector3 angularVelocity, float deltaTime)
         {
+            // Integrate angular velocity directly into a quaternion delta.
             Vector3 deltaRotation = angularVelocity * deltaTime * 0.5f;
             float magnitude = MathExtentions.FastMagnitude(deltaRotation);
 
@@ -328,6 +335,7 @@ namespace UnityPhysicsFloatingOrigin
             for (int i = 0; i < _bodies.Count; i++)
             {
                 _bodyData[i].velocity -= offset;
+                if (_bodies[i].rb.isKinematic) { continue; }
                 _bodies[i].rb.velocity -= (Vector3)offset;
             }
         }
@@ -345,6 +353,7 @@ namespace UnityPhysicsFloatingOrigin
 
         public void FindAllBodies()
         {
+            // Cache all bodies up front so the simulation can index them directly.
             _bodies.Clear();
             _bodyData.Clear();
             _bodies = FindObjectsOfType<Body>(false).ToList();
